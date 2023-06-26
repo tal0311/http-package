@@ -4,6 +4,7 @@
 
 export const http = {
 
+  logger: [],
   lastCall: {},
   headers: {
     "Content-Type": "application/json",
@@ -51,21 +52,38 @@ export const http = {
   beacon: function (url, data) {
     return new Promise((resolve, reject) => {
       try {
-        return resolve(navigator.sendBeacon(url, data))
+        resolve(navigator.sendBeacon(url, data))
       } catch (error) {
         reject(error)
       }
     })
   },
-  trace: async function (url, data) { },
+
   connect: async function (url) { },
 
   onFail: function (err) {
     throw err
   },
 
+  trace: async function (url, data) {
+    const { userAgentData } = navigator
+    const log = _createLog(url, data, userAgentData)
+    this.logger.push(log)
+  },
+
+  _createLog: function (url, data, userAgentData) {
+    return {
+      id: Math.random().toString(36).substring(2),
+      url,
+      data,
+      timestamp: Date.now(),
+      userAgentData,
+      protocol: window.protocol
+    }
+  },
+
   ajax: async function (url, method, data) {
-    debugger
+
     this.lastCall = {
       url,
       method,
