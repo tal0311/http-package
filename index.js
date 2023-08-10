@@ -1,7 +1,4 @@
 
-// promise fulfilled
-// interceptor
-
 export const http = {
 
   logger: [],
@@ -35,22 +32,23 @@ export const http = {
     return await this.ajax(url, this.get.name.toUpperCase(), data)
   },
   post: async function (url, data) {
-    return await this.ajax(url, this.get.name.toUpperCase(), data)
+    return await this.ajax(url, this.post.name.toUpperCase(), data)
   },
   put: async function (url, data) {
-    await this.ajax(url, this.get.name.toUpperCase(), data)
+    await this.ajax(url, this.put.name.toUpperCase(), data)
 
   },
   delete: async function (url, data) {
-    await this.ajax(url, this.get.name.toUpperCase(), data)
+    await this.ajax(url, this.delete.name.toUpperCase(), data)
 
   },
   patch: async function (url, data) {
-    await this.ajax(url, this.get.name.toUpperCase(), data)
+    await this.ajax(url, this.patch.name.toUpperCase(), data)
 
   },
   beacon: function (url, data) {
     return new Promise((resolve, reject) => {
+      if (!'navigator' in window) throw new Error('navigator is not defined in window')
       try {
         resolve(navigator.sendBeacon(url, data))
       } catch (error) {
@@ -67,7 +65,7 @@ export const http = {
 
   trace: async function (url, data) {
     const { userAgentData } = navigator
-    const log = _createLog(url, data, userAgentData)
+    const log = this._createLog(url, data, userAgentData)
     this.logger.push(log)
   },
 
@@ -94,14 +92,16 @@ export const http = {
       const queryString = new URLSearchParams(data).toString();
       url = `${url}/?${queryString}`
     }
+
+    this.trace(url, data)
     try {
       const res = await fetch(url, {
-        method: method, // *GET, POST, PUT, DELETE, etc.
+        method, // *GET, POST, PUT, DELETE, etc.
         mode: "cors", // no-cors, *cors, same-origin
         cache: "no-cache", // *default, no-cache, reload, force-cache, only-if-cached
         credentials: this.credentials, // include, *same-origin, omit
         headers: this.headers,
-        body: method === 'GET' ? null : JSON.stringify(data), // body data type must match "Content-Type" header
+        body: method === 'GET' ? null : this._getBodyByContentType(),
       })
       return res.json()
     } catch (error) {
@@ -112,9 +112,21 @@ export const http = {
 
   },
 
+  _getBodyByContentType: function () {
+    if (this.headers["Content-Type"] === "application/json") {
+      return JSON.stringify(data)
+    }
+    if (this.headers["Content-Type"] === "application/x-www-form-urlencoded") {
+      return new URLSearchParams(data).toString()
+    }
+    if (this.headers["Content-Type"] === "multipart/form-data") {
+      return data
+    }
+  },
+
   createErrorMsg: function (error) {
     return {
-      desc: 'Failed to fetch data',
+      desc: '[Failed to fetch data]' + error.message,
       stack: error.stack,
 
     }
