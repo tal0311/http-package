@@ -63,10 +63,14 @@ export const http = {
     throw err
   },
 
-  trace: async function (url, data) {
+  trace: function (url, data) {
     const { userAgentData } = navigator
     const log = this._createLog(url, data, userAgentData)
     this.logger.push(log)
+  },
+
+  getLogs: function () {
+    return this.logger
   },
 
   _createLog: function (url, data, userAgentData) {
