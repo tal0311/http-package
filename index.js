@@ -1,12 +1,15 @@
 
 export const http = {
-
   logger: [],
   lastCall: {},
-  headers: {
-    "Content-Type": "application/json",
+  fetchOptions: {
+    mode: "cors",
+    cache: "no-cache",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
   },
-  credentials: "same-origin", // include, *same-origin, omit
   retry: function (tries, delay) {
     if (!tries || !delay) throw 'Calling retry method requires tries and delay as arguments'
     return new Promise((res, rej) => {
@@ -22,12 +25,12 @@ export const http = {
       }, delay)
     })
   },
-  setHeaders: function (headers) {
-    this.headers = headers
+
+  setOptions: function (options) {
+    this.fetchOptions = { ...this.fetchOptions, ...options }
   },
-  setCredentials: function (credentials) {
-    this.credentials = credentials
-  },
+
+
   get: async function (url, data) {
     return await this.ajax(url, this.get.name.toUpperCase(), data)
   },
@@ -85,7 +88,6 @@ export const http = {
   },
 
   ajax: async function (url, method, data) {
-
     this.lastCall = {
       url,
       method,
@@ -99,15 +101,12 @@ export const http = {
 
     this.trace(url, data)
     try {
-      const res = await fetch(url, {
-        method, // *GET, POST, PUT, DELETE, etc.
-        mode: "cors", // no-cors, *cors, same-origin
-        cache: "no-cache", // *default, no-cache, reload, force-cache, only-if-cached
-        credentials: this.credentials, // include, *same-origin, omit
-        headers: this.headers,
-        body: method === 'GET' ? null : this._getBodyByContentType(),
-      })
-      return res.json()
+      const fetchOptions = { ...this.fetchOptions, method }
+      if (method !== 'GET') {
+        fetchOptions.body = this._getBodyByContentType(data)
+      }
+      const res = await fetch(url, fetchOptions)
+      return this._getResByContentType(res)
     } catch (error) {
       console.error(error)
       const errorMsg = this.createErrorMsg(error)
@@ -116,14 +115,26 @@ export const http = {
 
   },
 
+  _getResByContentType(res) {
+    if (this.fetchOptions.headers["Content-Type"] === "application/json") {
+      return res.json()
+    }
+    if (this.fetchOptions.headers["Content-Type"] === "application/x-www-form-urlencoded") {
+      return res.text()
+    }
+    if (this.fetchOptions.headers["Content-Type"] === "multipart/form-data") {
+      return res.formData()
+    }
+  },
+
   _getBodyByContentType: function () {
-    if (this.headers["Content-Type"] === "application/json") {
+    if (this.fetchOptions.headers["Content-Type"] === "application/json") {
       return JSON.stringify(data)
     }
-    if (this.headers["Content-Type"] === "application/x-www-form-urlencoded") {
+    if (this.fetchOptions.headers["Content-Type"] === "application/x-www-form-urlencoded") {
       return new URLSearchParams(data).toString()
     }
-    if (this.headers["Content-Type"] === "multipart/form-data") {
+    if (this.fetchOptions.headers["Content-Type"] === "multipart/form-data") {
       return data
     }
   },

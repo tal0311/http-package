@@ -1,10 +1,10 @@
 import { http } from './index.js'
+const BASE_URL = '//localhost:3000/api'
 
-
-// loadPosts()
+loadPosts()
 async function loadPosts() {
  try {
-  const data = await query('https://jsonplaceholder.typicode1.com/posts')
+  const data = await query(`${BASE_URL}/posts`)
   console.log('data:', data)
  } catch (error) {
   console.log('error:', error)
@@ -19,7 +19,7 @@ async function query(url) {
 
  } catch (error) {
   console.log('error from the call:', error)
-  return http.retry(3, 2000).then(res => res).catch(console.error)
+
  }
 }
 
